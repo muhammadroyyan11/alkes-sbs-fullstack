@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Address;
+use App\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -72,5 +73,78 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('shipments', ['order_id'=>$order->id,'courier'=>'RajaOngkir']);
         $this->assertSame(3, $product->fresh()->stock);
         $this->assertEmpty(session('cart', []));
+    }
+
+    public function test_account_dashboard_shows_order_status_counts_and_filters_history(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $address = Address::create([
+            'user_id' => $user->id,
+            'label' => 'Rumah',
+            'recipient_name' => $user->name,
+            'phone' => '08123456789',
+            'address' => 'Jl. Kesehatan 10',
+            'city' => 'Malang',
+            'province' => 'Jawa Timur',
+            'postal_code' => '65100',
+            'is_primary' => true,
+        ]);
+
+        $baseOrder = [
+            'user_id' => $user->id,
+            'address_id' => $address->id,
+            'shipping_method' => 'regular',
+            'subtotal' => 100000,
+            'shipping_cost' => 20000,
+            'total' => 120000,
+            'shipping_address' => 'Jl. Kesehatan 10, Malang',
+        ];
+
+        $unpaid = Order::create($baseOrder + [
+            'order_number' => 'SBS-ACCOUNT-UNPAID',
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'payment_method' => 'bank_transfer',
+        ]);
+        Order::create($baseOrder + [
+            'order_number' => 'SBS-ACCOUNT-PROCESS',
+            'status' => 'processing',
+            'payment_status' => 'unpaid',
+            'payment_method' => 'cod',
+        ]);
+        $shipped = Order::create($baseOrder + [
+            'order_number' => 'SBS-ACCOUNT-SHIPPED',
+            'status' => 'shipped',
+            'payment_status' => 'paid',
+            'payment_method' => 'bank_transfer',
+        ]);
+        $shipped->shipment()->create(['courier' => 'JNE', 'service' => 'REG', 'status' => 'in_transit']);
+        $completed = Order::create($baseOrder + [
+            'order_number' => 'SBS-ACCOUNT-DONE',
+            'status' => 'completed',
+            'payment_status' => 'paid',
+            'payment_method' => 'bank_transfer',
+        ]);
+        $completed->shipment()->create(['courier' => 'JNE', 'service' => 'REG', 'status' => 'delivered']);
+
+        $this->actingAs($user)
+            ->withSession(['cart' => [['quantity' => 2]]])
+            ->get(route('account.index'))
+            ->assertOk()
+            ->assertSee('Status Pesanan')
+            ->assertSee('Transaksi Terakhir')
+            ->assertSee('1 pesanan')
+            ->assertViewHas('orderStatusCounts', fn ($counts) => $counts->all() === [
+                'unpaid' => 1,
+                'processing' => 1,
+                'shipped' => 1,
+                'completed' => 1,
+            ]);
+
+        $this->get(route('orders.index', ['status' => 'shipped']))
+            ->assertOk()
+            ->assertSee($shipped->order_number)
+            ->assertDontSee($unpaid->order_number)
+            ->assertDontSee($completed->order_number);
     }
 }
