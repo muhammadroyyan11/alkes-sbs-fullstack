@@ -1,0 +1,3 @@
+<?php
+namespace App\Http\Controllers\Front;use App\Http\Controllers\Controller;use Illuminate\Http\Request;
+class AccountController extends Controller{public function index(Request $r){return view('front.account.index',['user'=>$r->user(),'addresses'=>$r->user()->addresses()->latest()->get(),'orders'=>$r->user()->orders()->latest()->limit(5)->get()]);}public function update(Request $r){$data=$r->validate(['name'=>'required|string|max:100','phone'=>'nullable|string|max:30','address'=>'nullable|string|max:1000']);$r->user()->update($data);return back()->with('success','Profil berhasil diperbarui.');}}

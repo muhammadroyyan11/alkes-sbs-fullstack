@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Model;
+class Order extends Model{protected $fillable=['order_number','user_id','address_id','status','payment_status','payment_method','shipping_method','subtotal','shipping_cost','total','shipping_address','notes'];protected $casts=['subtotal'=>'decimal:2','shipping_cost'=>'decimal:2','total'=>'decimal:2'];public function items(){return $this->hasMany(OrderItem::class);}public function address(){return $this->belongsTo(Address::class);}public function shipment(){return $this->hasOne(Shipment::class);}public function user(){return $this->belongsTo(User::class);}}
