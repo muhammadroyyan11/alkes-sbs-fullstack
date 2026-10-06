@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Variant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,11 @@ class CartController extends Controller
 {
     public function index(Request $request): View
     {
-        return view('front.cart.index', ['cart' => $request->session()->get('cart', [])]);
+        return view('front.cart.index', [
+            'cart' => $request->session()->get('cart', []),
+            'adminFee' => max(0, Setting::int('admin_fee')),
+            'adminFeeLabel' => Setting::get('admin_fee_label', 'Biaya Admin'),
+        ]);
     }
 
     public function store(Request $request, Product $product): RedirectResponse

@@ -18,6 +18,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'midtrans.csp' => \App\Http\Middleware\MidtransCspMiddleware::class,
+        ]);
+
+        $middleware->web(append: [
+            \App\Http\Middleware\MidtransCspMiddleware::class,
+        ]);
+
+        // Webhook Midtrans dikirim dari server mereka, tanpa token CSRF.
+        $middleware->validateCsrfTokens(except: [
+            'payment/callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

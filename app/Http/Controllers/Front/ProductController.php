@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,6 +15,8 @@ class ProductController extends Controller
         $search = trim((string) $request->query('q'));
         $stock = $request->query('stock');
         $sort = $request->query('sort', 'latest');
+        $kategori = trim((string) $request->query('kategori'));
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         $products = Product::query()
             ->where('is_active', true)
@@ -25,6 +28,9 @@ class ProductController extends Controller
                         ->orWhere('description', 'like', "%{$search}%");
                 });
             })
+            ->when($kategori !== '', function ($query) use ($kategori) {
+                $query->whereHas('category', fn ($category) => $category->where('slug', $kategori));
+            })
             ->when($stock === 'available', fn ($query) => $query->where('stock', '>', 0))
             ->when($stock === 'low', fn ($query) => $query->whereBetween('stock', [1, 10]))
             ->when($stock === 'empty', fn ($query) => $query->where('stock', 0))
@@ -35,7 +41,7 @@ class ProductController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('front.products.index', compact('products', 'search', 'stock', 'sort'));
+        return view('front.products.index', compact('products', 'search', 'stock', 'sort', 'categories', 'kategori'));
     }
 
     public function show(Product $product): View

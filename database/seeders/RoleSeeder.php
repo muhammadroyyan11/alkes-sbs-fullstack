@@ -51,6 +51,11 @@ class RoleSeeder extends Seeder
             'manage-purchase-orders',
         ]);
 
+        $operasional = Role::firstOrCreate(['name' => 'operasional']);
+        $operasional->syncPermissions([
+            'view-reports',
+        ]);
+
         $cs = Role::firstOrCreate(['name' => 'cs']);
         $cs->syncPermissions([
             'view-reports',

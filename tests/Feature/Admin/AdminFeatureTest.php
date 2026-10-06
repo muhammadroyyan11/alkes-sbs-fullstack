@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Variant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -205,27 +206,39 @@ class AdminFeatureTest extends TestCase
     {
         $this->actingAs($this->admin);
         $supplier = Supplier::create(['name' => 'Supplier PO']);
+        $product = Product::create([
+            'name' => 'Produk PO', 'sku' => 'PO-TEST-PRODUCT', 'price' => 1000,
+            'stock' => 3, 'unit' => 'pcs', 'is_active' => true,
+        ]);
 
         $this->post('/admin/purchase-orders', [])->assertSessionHasErrors('supplier_id');
         $this->post('/admin/purchase-orders', [
             'supplier_id' => $supplier->id,
             'notes' => 'PO full test',
+            'items' => [
+                ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 10, 'price' => 500],
+            ],
         ])->assertRedirect();
 
         $purchaseOrder = PurchaseOrder::where('supplier_id', $supplier->id)->firstOrFail();
         $this->assertSame('draft', $purchaseOrder->status);
+        $this->assertSame(5000, (int) $purchaseOrder->total);
         $this->get(route('admin.purchase-orders.show', $purchaseOrder))->assertOk();
         $this->post(route('admin.purchase-orders.send', $purchaseOrder))->assertRedirect();
         $this->assertSame('sent', $purchaseOrder->fresh()->status);
 
+        $poItem = $purchaseOrder->items()->firstOrFail();
         $this->post('/admin/purchase-receives', [
             'purchase_order_id' => $purchaseOrder->id,
             'notes' => 'Receive full test',
+            'items' => [$poItem->id => 6],
         ])->assertRedirect();
         $receive = PurchaseReceive::where('purchase_order_id', $purchaseOrder->id)->firstOrFail();
+        $this->assertSame(6, $receive->items()->firstOrFail()->quantity_received);
         $this->get(route('admin.purchase-receives.show', $receive))->assertOk();
         $this->post(route('admin.purchase-receives.approve', $receive))->assertRedirect();
         $this->assertSame('received', $receive->fresh()->status);
+        $this->assertSame(9, $product->fresh()->stock);
 
         $this->post(route('admin.purchase-orders.cancel', $purchaseOrder))->assertRedirect();
         $this->assertSame('cancelled', $purchaseOrder->fresh()->status);
@@ -256,6 +269,24 @@ class AdminFeatureTest extends TestCase
 
         $this->post(route('admin.stock-opnames.approve', $opname))->assertRedirect();
         $this->assertSame('approved', $opname->fresh()->status);
+        $this->assertSame(8, $product->fresh()->stock);
+        $this->assertSame(8, $stock->fresh()->quantity);
+        $this->assertDatabaseHas('stock_mutations', [
+            'stock_id' => $stock->id,
+            'type' => 'out',
+            'quantity' => 2,
+            'reference_type' => StockOpname::class,
+            'reference_id' => $opname->id,
+        ]);
+
+        // Approval ganda ditolak: stok tidak dihitung dua kali.
+        $this->post(route('admin.stock-opnames.approve', $opname))->assertRedirect();
+        $this->assertSame(8, $product->fresh()->stock);
+        $this->assertDatabaseCount('stock_mutations', 1);
+
+        $pending = StockOpname::create(['user_id' => $this->admin->id, 'status' => 'pending']);
+        $this->post(route('admin.stock-opnames.approve', $pending))->assertRedirect();
+        $this->assertSame('pending', $pending->fresh()->status);
 
         $rejected = StockOpname::create(['user_id' => $this->admin->id, 'status' => 'pending']);
         $this->post(route('admin.stock-opnames.reject', $rejected))->assertRedirect();
@@ -273,8 +304,42 @@ class AdminFeatureTest extends TestCase
             'site_email' => 'info@example.test',
             'site_phone' => '021123456',
             'site_address' => 'Jakarta',
+            'wa_number' => '6281111111',
+            'shipping_origin_city' => 'Surabaya',
+            'shipping_origin_province' => 'Jawa Timur',
+            'shipping_regular_cost' => 25000,
+            'shipping_instant_cost' => 40000,
+            'shipping_instant_enabled' => '1',
+            'shipping_instant_areas' => 'Kota Surabaya',
+            'admin_fee' => 2500,
+            'feature_reviews' => '1',
+            'feature_wishlist' => '0',
+            'feature_live_chat' => '1',
+            'feature_cod' => '0',
         ])->assertRedirect(route('admin.website.edit'));
 
-        $this->assertSame('ALKES SBS Test', Cache::get('website_settings')['site_name']);
+        $this->assertSame('ALKES SBS Test', Setting::get('site_name'));
+        $this->assertSame(2500, Setting::int('admin_fee'));
+        $this->assertSame(40000, Setting::int('shipping_instant_cost'));
+        $this->assertSame('1', (string) Setting::get('shipping_instant_enabled'));
+        $this->assertSame('Kota Surabaya', (string) Setting::get('shipping_instant_areas'));
+        $this->assertSame('Surabaya', Setting::get('shipping_origin_city'));
+
+        $this->assertDatabaseHas('settings', ['key' => 'admin_fee', 'value' => '2500']);
+
+        // Halaman depan membaca pengaturan yang sama.
+        $this->get(route('cart.index'))->assertOk();
+    }
+
+    public function test_website_settings_reject_invalid_urls_and_out_of_range_values(): void
+    {
+        $this->actingAs($this->admin);
+
+        $this->put('/admin/website', [
+            'site_name' => 'ALKES SBS',
+            'tokopedia_url' => 'bukan-url',
+            'admin_fee' => -100,
+            'feature_reviews' => 'maybe',
+        ])->assertSessionHasErrors(['tokopedia_url', 'admin_fee', 'feature_reviews']);
     }
 }

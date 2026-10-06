@@ -10,7 +10,11 @@ class PurchaseReceive extends Model
     use HasFactory;
 
     protected $fillable = [
-        'receive_number', 'purchase_order_id', 'user_id', 'status', 'notes',
+        'receive_number', 'purchase_order_id', 'user_id', 'status', 'notes', 'approved_by', 'received_at',
+    ];
+
+    protected $casts = [
+        'received_at' => 'datetime',
     ];
 
     public function purchaseOrder()
@@ -21,6 +25,11 @@ class PurchaseReceive extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function items()

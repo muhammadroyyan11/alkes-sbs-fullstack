@@ -55,7 +55,11 @@ class ExampleTest extends TestCase
         $this->get(route('cart.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Rp 200.000');
         $this->get(route('checkout.index'))->assertRedirect(route('login'));
         $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('checkout.index'));
-        $this->get(route('checkout.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Selesaikan Pesanan');
+        $this->get(route('checkout.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Selesaikan Pesanan')
+            ->assertSee('img/payments/bca_va.svg', false)
+            ->assertSee('img/payments/qris.svg', false)
+            ->assertSee('img/payments/dana.svg', false)
+            ->assertSee('img/payments/visa.svg', false);
     }
 
     public function test_customer_can_place_order_and_stock_is_reduced(): void
@@ -65,10 +69,10 @@ class ExampleTest extends TestCase
         $address = Address::create(['user_id'=>$user->id,'label'=>'Rumah','recipient_name'=>$user->name,'phone'=>'08123','address'=>'Jl. Test 1','city'=>'Malang','province'=>'Jawa Timur','postal_code'=>'65100','is_primary'=>true]);
 
         $this->actingAs($user)->post(route('cart.store', $product), ['quantity' => 2]);
-        $response = $this->post(route('checkout.store'), ['address_id'=>$address->id,'shipping_method'=>'regular','payment_method'=>'bank_transfer']);
+        $response = $this->post(route('checkout.store'), ['address_id'=>$address->id,'shipping_method'=>'regular','payment_method'=>'bca_va']);
 
         $order = $user->orders()->firstOrFail();
-        $response->assertRedirect(route('orders.show', $order));
+        $response->assertRedirect(route('payment.index', $order));
         $this->assertDatabaseHas('order_items', ['order_id'=>$order->id,'sku'=>'ORDER-001','quantity'=>2]);
         $this->assertDatabaseHas('shipments', ['order_id'=>$order->id,'courier'=>'RajaOngkir']);
         $this->assertSame(3, $product->fresh()->stock);

@@ -42,34 +42,32 @@
         <h6 style="margin-top:20px;margin-bottom:10px;font-weight:600;">Riwayat Mutasi Stok</h6>
         <div class="table-responsive">
             <table class="dt-table" style="width:100%">
-                <thead>
+                    <thead>
                     <tr>
                         <th>Tanggal</th>
                         <th>Tipe</th>
+                        <th>Status</th>
                         <th>Jumlah</th>
                         <th>Catatan</th>
                         <th>User</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     @foreach($stock->mutations as $mutation)
                     <tr>
                         <td>{{ $mutation->created_at->format('d/m/Y H:i') }}</td>
                         <td>
-                            @if($mutation->type === 'in')
-                            <span class="badge badge-success">Masuk</span>
-                            @elseif($mutation->type === 'out')
-                            <span class="badge badge-danger">Keluar</span>
-                            @else
-                            <span class="badge badge-warning">Penyesuaian</span>
-                            @endif
+                            <span class="badge {{ $mutation->typeBadgeClass() }}">{{ $mutation->typeLabel() }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ $mutation->statusBadgeClass() }}">{{ $mutation->statusLabel() }}</span>
                         </td>
                         <td>{{ $mutation->quantity }}</td>
                         <td>{{ $mutation->note ?? '-' }}</td>
                         <td>{{ $mutation->creator?->name ?? '-' }}</td>
                     </tr>
                     @endforeach
-                </tbody>
+                    </tbody>
             </table>
         </div>
         @else

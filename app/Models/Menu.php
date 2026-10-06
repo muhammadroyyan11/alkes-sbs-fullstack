@@ -68,24 +68,25 @@ class Menu extends Model
      */
     public static function getForUser(User $user): array
     {
-        // Admin gets all active menus
-        if ($user->isAdmin()) {
-            $menus = self::where('is_active', true)
-                ->whereNull('parent_id')
-                ->orderBy('group_order')
-                ->orderBy('order')
-                ->with('children')
-                ->get();
-        } else {
-            // Non-admin: only assigned menus
-            $menuIds = $user->menus()->pluck('menus.id')->toArray();
-            $menus = self::where('is_active', true)
-                ->whereNull('parent_id')
-                ->whereIn('id', $menuIds)
-                ->orderBy('group_order')
-                ->orderBy('order')
-                ->with(['children' => fn($q) => $q->whereIn('id', $menuIds)])
-                ->get();
+        $menus = self::where('is_active', true)
+            ->whereNull('parent_id')
+            ->orderBy('group_order')
+            ->orderBy('order')
+            ->with('children')
+            ->get();
+
+        // Admin melihat semua; staf (gudang/operasional) hanya menu sesuai peta akses role
+        if (!$user->isAdmin()) {
+            $menus = $menus
+                ->filter(fn ($menu) => $user->canAccessAdminRoute($menu->route))
+                ->values();
+
+            foreach ($menus as $menu) {
+                $menu->setRelation(
+                    'children',
+                    $menu->children->filter(fn ($child) => $user->canAccessAdminRoute($child->route))->values()
+                );
+            }
         }
 
         // Group by group name

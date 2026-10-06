@@ -23,7 +23,7 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.store') }}">
+        <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="form-row">
                 <div class="form-group">
@@ -56,6 +56,21 @@
                         <option value="1" {{ old('is_active', 1) ? 'selected' : '' }}>Aktif</option>
                         <option value="0" {{ old('is_active') == 0 ? 'selected' : '' }}>Nonaktif</option>
                     </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Kategori</label>
+                    <select name="category_id" class="form-control">
+                        <option value="">— Tanpa kategori —</option>
+                        @foreach($categories as $category)
+                        <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gambar Produk (JPG/PNG/WEBP, maks 2 MB)</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
                 </div>
             </div>
             <div class="form-group">

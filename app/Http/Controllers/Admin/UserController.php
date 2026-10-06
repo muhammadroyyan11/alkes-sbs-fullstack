@@ -25,7 +25,15 @@ class UserController extends Controller
                 $you = $u->id === auth()->id() ? ' <span class="badge badge-info">Anda</span>' : '';
                 return '<strong>' . e($u->name) . '</strong>' . $you;
             })
-            ->addColumn('role_badge', fn($u) => '<span class="badge ' . ($u->role === 'admin' ? 'badge-warning' : 'badge-secondary') . '">' . ucfirst($u->role) . '</span>')
+            ->addColumn('role_badge', function ($u) {
+                $class = match ($u->role) {
+                    'admin', 'superadmin' => 'badge-warning',
+                    'gudang', 'operasional' => 'badge-info',
+                    default => 'badge-secondary',
+                };
+
+                return '<span class="badge ' . $class . '">' . ucfirst($u->role) . '</span>';
+            })
             ->addColumn('status_badge', fn($u) => '<span class="badge ' . ($u->is_active ? 'badge-success' : 'badge-danger') . '">' . ($u->is_active ? 'Aktif' : 'Nonaktif') . '</span>')
             ->addColumn('actions', function ($u) {
                 $edit = '<a href="' . route('admin.users.edit', $u) . '" class="btn btn-sm btn-secondary"><i class="fa-solid fa-pen"></i></a>';
@@ -49,7 +57,7 @@ class UserController extends Controller
             'name'      => 'required|string|max:100',
             'email'     => 'required|email|unique:users',
             'password'  => 'required|min:6|confirmed',
-            'role'      => 'required|in:admin,user',
+            'role'      => 'required|in:admin,gudang,operasional,user',
         ]);
 
         User::create([
@@ -74,7 +82,7 @@ class UserController extends Controller
             'name'      => 'required|string|max:100',
             'email'     => 'required|email|unique:users,email,' . $user->id,
             'password'  => 'nullable|min:6|confirmed',
-            'role'      => 'required|in:admin,user',
+            'role'      => 'required|in:admin,gudang,operasional,user',
         ]);
 
         $data = $request->except('password', 'password_confirmation');

@@ -23,7 +23,7 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.update', $product) }}">
+        <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="form-row">
@@ -57,6 +57,29 @@
                         <option value="1" {{ old('is_active', $product->is_active) ? 'selected' : '' }}>Aktif</option>
                         <option value="0" {{ old('is_active', $product->is_active) == 0 ? 'selected' : '' }}>Nonaktif</option>
                     </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Kategori</label>
+                    <select name="category_id" class="form-control">
+                        <option value="">— Tanpa kategori —</option>
+                        @foreach($categories as $category)
+                        <option value="{{ $category->id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ganti Gambar</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    @if($product->image)
+                    <div class="mt-2">
+                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;">
+                        <label class="ml-2">
+                            <input type="checkbox" name="remove_image" value="1"> Hapus gambar
+                        </label>
+                    </div>
+                    @endif
                 </div>
             </div>
             <div class="form-group">

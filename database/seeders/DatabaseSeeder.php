@@ -295,6 +295,8 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        $this->call(CategorySeeder::class);
+
         $this->command->info('✅ Sample data berhasil di-seed!');
         $this->command->info('   - ' . count($admins) . ' admin users');
         $this->command->info('   - ' . count($productModels) . ' products');

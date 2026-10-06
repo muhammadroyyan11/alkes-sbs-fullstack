@@ -4,7 +4,9 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
+@php($me = auth()->user())
 <div class="stats-grid">
+    @if($me->canAccessAdminRoute('admin.products.index'))
     <div class="stat-card">
         <div class="stat-icon" style="background:#dc2626;">
             <i class="fa-solid fa-box"></i>
@@ -14,6 +16,8 @@
             <p>Total Produk</p>
         </div>
     </div>
+    @endif
+    @if($me->canAccessAdminRoute('admin.users.index'))
     <div class="stat-card">
         <div class="stat-icon" style="background:#28a745;">
             <i class="fa-solid fa-users"></i>
@@ -23,6 +27,8 @@
             <p>Total Pengguna</p>
         </div>
     </div>
+    @endif
+    @if($me->canAccessAdminRoute('admin.stocks.index'))
     <div class="stat-card">
         <div class="stat-icon" style="background:#ffc107;">
             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -32,6 +38,8 @@
             <p>Stok Menipis</p>
         </div>
     </div>
+    @endif
+    @if($me->canAccessAdminRoute('admin.purchase-orders.index'))
     <div class="stat-card">
         <div class="stat-icon" style="background:#17a2b8;">
             <i class="fa-solid fa-file-invoice"></i>
@@ -41,6 +49,7 @@
             <p>PO Pending</p>
         </div>
     </div>
+    @endif
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -49,33 +58,51 @@
             <h5><i class="fa-solid fa-link"></i> Akses Cepat</h5>
         </div>
         <div class="card-body">
+            @if($me->canAccessAdminRoute('admin.products.index'))
             <a href="{{ route('admin.products.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-box"></i> Produk
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.variants.index'))
             <a href="{{ route('admin.variants.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-layer-group"></i> Variant
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.stocks.index'))
             <a href="{{ route('admin.stocks.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-cubes"></i> Stok
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.stock-opnames.index'))
             <a href="{{ route('admin.stock-opnames.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-clipboard-check"></i> Stok Opname
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.suppliers.index'))
             <a href="{{ route('admin.suppliers.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-truck"></i> Supplier
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.purchase-orders.index'))
             <a href="{{ route('admin.purchase-orders.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-file-invoice"></i> Purchase Order
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.purchase-receives.index'))
             <a href="{{ route('admin.purchase-receives.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-boxes-stacked"></i> Purchase Receive
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.users.index'))
             <a href="{{ route('admin.users.index') }}" class="btn btn-primary" style="margin-right:8px;margin-bottom:8px;">
                 <i class="fa-solid fa-user-gear"></i> Users
             </a>
+            @endif
+            @if($me->canAccessAdminRoute('admin.website.edit'))
             <a href="{{ route('admin.website.edit') }}" class="btn btn-secondary" style="margin-bottom:8px;">
                 <i class="fa-solid fa-globe"></i> Website
             </a>
+            @endif
         </div>
     </div>
 

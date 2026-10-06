@@ -22,19 +22,24 @@ class MenuSeeder extends Seeder
             // ═══ PRODUK ═══
             ['name' => 'Produk', 'icon' => 'fa-solid fa-box', 'route' => 'admin.products.index', 'group' => 'Produk', 'group_order' => 2, 'order' => 1],
             ['name' => 'Variant', 'icon' => 'fa-solid fa-layer-group', 'route' => 'admin.variants.index', 'group' => 'Produk', 'group_order' => 2, 'order' => 2],
+            ['name' => 'Kategori', 'icon' => 'fa-solid fa-tags', 'route' => 'admin.categories.index', 'group' => 'Produk', 'group_order' => 2, 'order' => 3],
 
             // ═══ STOK ═══
             ['name' => 'Stok', 'icon' => 'fa-solid fa-cubes', 'route' => 'admin.stocks.index', 'group' => 'Stok', 'group_order' => 3, 'order' => 1],
             ['name' => 'Stok Opname', 'icon' => 'fa-solid fa-clipboard-check', 'route' => 'admin.stock-opnames.index', 'group' => 'Stok', 'group_order' => 3, 'order' => 2],
+            ['name' => 'Log Stok', 'icon' => 'fa-solid fa-arrow-right-arrow-left', 'route' => 'admin.stock-logs.index', 'group' => 'Stok', 'group_order' => 3, 'order' => 3],
 
             // ═══ PEMBELIAN ═══
             ['name' => 'Supplier', 'icon' => 'fa-solid fa-truck', 'route' => 'admin.suppliers.index', 'group' => 'Pembelian', 'group_order' => 4, 'order' => 1],
             ['name' => 'Purchase Order', 'icon' => 'fa-solid fa-file-invoice', 'route' => 'admin.purchase-orders.index', 'group' => 'Pembelian', 'group_order' => 4, 'order' => 2],
             ['name' => 'Purchase Receive', 'icon' => 'fa-solid fa-boxes-stacked', 'route' => 'admin.purchase-receives.index', 'group' => 'Pembelian', 'group_order' => 4, 'order' => 3],
 
+            // ═══ PENJUALAN ═══
+            ['name' => 'Pesanan', 'icon' => 'fa-solid fa-shopping-cart', 'route' => 'admin.orders.index', 'group' => 'Penjualan', 'group_order' => 5, 'order' => 1],
+
             // ═══ PENGATURAN ═══
-            ['name' => 'Users', 'icon' => 'fa-solid fa-user-gear', 'route' => 'admin.users.index', 'group' => 'Pengaturan', 'group_order' => 5, 'order' => 1],
-            ['name' => 'Website', 'icon' => 'fa-solid fa-globe', 'route' => 'admin.website.edit', 'group' => 'Pengaturan', 'group_order' => 5, 'order' => 2],
+            ['name' => 'Users', 'icon' => 'fa-solid fa-user-gear', 'route' => 'admin.users.index', 'group' => 'Pengaturan', 'group_order' => 6, 'order' => 1],
+            ['name' => 'Website', 'icon' => 'fa-solid fa-globe', 'route' => 'admin.website.edit', 'group' => 'Pengaturan', 'group_order' => 6, 'order' => 2],
         ];
 
         foreach ($menus as $menu) {

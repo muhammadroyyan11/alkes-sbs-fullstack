@@ -224,3 +224,35 @@
     </div>
 </main>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function openFromHash() {
+        var hash = window.location.hash;
+        if (hash) {
+            var el = document.querySelector(hash);
+            if (el && el.tagName === 'DETAILS') {
+                el.open = true;
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+
+    // Klik link hash → buka details juga
+    document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var target = document.querySelector(this.getAttribute('href'));
+            if (target && target.tagName === 'DETAILS') {
+                e.preventDefault();
+                target.open = true;
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                history.replaceState(null, '', this.getAttribute('href'));
+            }
+        });
+    });
+});
+</script>
+@endpush

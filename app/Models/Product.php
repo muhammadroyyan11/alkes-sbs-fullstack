@@ -10,7 +10,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'sku', 'price', 'stock', 'unit', 'description', 'is_active',
+        'name', 'sku', 'price', 'stock', 'unit', 'description', 'is_active', 'category_id', 'image',
     ];
 
     protected $casts = [
@@ -24,8 +24,17 @@ class Product extends Model
         return $this->hasMany(Variant::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function getImageUrlAttribute(): string
     {
+        if ($this->image) {
+            return asset('img/products/' . $this->image);
+        }
+
         $name = strtolower($this->name);
 
         $images = [

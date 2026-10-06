@@ -180,6 +180,7 @@
         .badge-warning { background: #fff3cd; color: #856404; }
         .badge-info { background: #d1ecf1; color: #0c5460; }
         .badge-secondary { background: #e2e3e5; color: #383d41; }
+        .badge-primary { background: var(--primary); color: #fff; }
 
         /* Alert */
         .alert {

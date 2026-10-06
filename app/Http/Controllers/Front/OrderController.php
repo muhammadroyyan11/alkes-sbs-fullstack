@@ -11,6 +11,9 @@ class OrderController extends Controller
 {
     public function index(Request $request): View
     {
+        // Perbarui pesanan yang lewat 30 menit belum bayar (auto-cancel).
+        \App\Services\OrderExpiry::run();
+
         $status = $request->query('status');
         $allowedStatuses = ['unpaid', 'processing', 'shipped', 'completed'];
 

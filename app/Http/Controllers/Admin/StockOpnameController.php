@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\Stock;
+use App\Services\StockLogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -72,6 +74,12 @@ class StockOpnameController extends Controller
 
     public function count(Request $request, StockOpname $stockOpname)
     {
+        if ($stockOpname->status !== 'pending') {
+            return redirect()
+                ->route('admin.stock-opnames.show', $stockOpname)
+                ->with('error', 'Hitung hanya bisa dilakukan sekali (status: ' . $stockOpname->status . ').');
+        }
+
         $request->validate([
             'items' => 'required|array',
             'items.*.stock_id' => 'required|exists:stocks,id',
@@ -101,13 +109,55 @@ class StockOpnameController extends Controller
 
     public function approve(StockOpname $stockOpname)
     {
-        $stockOpname->update(['status' => 'approved']);
-        return redirect()->route('admin.stock-opnames.show', $stockOpname)->with('success', 'Stok Opname berhasil disetujui.');
+        if ($stockOpname->status !== 'counted') {
+            return redirect()
+                ->route('admin.stock-opnames.show', $stockOpname)
+                ->with('error', 'Stok opname harus dihitung terlebih dahulu (status: ' . $stockOpname->status . ').');
+        }
+
+        $code = 'SO-' . str_pad($stockOpname->id, 4, '0', STR_PAD_LEFT);
+
+        try {
+            DB::transaction(function () use ($stockOpname, $code) {
+                $log = app(StockLogService::class);
+
+                foreach ($stockOpname->items as $item) {
+                    $log->applyOpname($item, $code, auth()->id());
+                }
+
+                $stockOpname->update([
+                    'status' => 'approved',
+                    'approved_by' => auth()->id(),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('admin.stock-opnames.show', $stockOpname)
+                ->with('error', 'Stok opname gagal disetujui: ' . $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.stock-opnames.show', $stockOpname)
+            ->with('success', 'Stok opname disetujui. Selisih stok sudah diterapkan dan tercatat di log stok.');
     }
 
     public function reject(StockOpname $stockOpname)
     {
-        $stockOpname->update(['status' => 'rejected']);
-        return redirect()->route('admin.stock-opnames.show', $stockOpname)->with('success', 'Stok Opname berhasil ditolak.');
+        if (!in_array($stockOpname->status, ['pending', 'counted'], true)) {
+            return redirect()
+                ->route('admin.stock-opnames.show', $stockOpname)
+                ->with('error', 'Stok opname sudah diproses (' . $stockOpname->status . ').');
+        }
+
+        $stockOpname->update([
+            'status' => 'rejected',
+            'approved_by' => auth()->id(),
+        ]);
+
+        return redirect()
+            ->route('admin.stock-opnames.show', $stockOpname)
+            ->with('success', 'Stok opname ditolak. Tidak ada perubahan stok.');
     }
 }

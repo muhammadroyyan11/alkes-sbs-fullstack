@@ -15,6 +15,18 @@ Route::get('/checkout', [Front\CheckoutController::class, 'index'])->middleware(
 Route::post('/checkout', [Front\CheckoutController::class, 'store'])->middleware('auth')->name('checkout.store');
 Route::middleware('auth')->prefix('akun')->name('account.')->group(function(){Route::get('/',[Front\AccountController::class,'index'])->name('index');Route::patch('/',[Front\AccountController::class,'update'])->name('update');Route::post('/alamat',[Front\AddressController::class,'store'])->name('addresses.store');Route::put('/alamat/{address}',[Front\AddressController::class,'update'])->name('addresses.update');Route::delete('/alamat/{address}',[Front\AddressController::class,'destroy'])->name('addresses.destroy');});
 Route::middleware('auth')->group(function(){Route::get('/pesanan',[Front\OrderController::class,'index'])->name('orders.index');Route::get('/pesanan/{order}',[Front\OrderController::class,'show'])->name('orders.show');});
+Route::middleware('auth')->prefix('pembayaran')->name('payment.')->group(function () {
+    Route::get('/{order}', [Front\PaymentController::class, 'index'])->name('index');
+    Route::get('/{order}/selesai', [Front\PaymentController::class, 'finish'])->name('finish');
+});
+Route::post('/payment/callback', [Front\PaymentController::class, 'callback'])->name('payment.callback');
+
+Route::prefix('api/shipping')->name('shipping.')->group(function () {
+    Route::get('/provinces', [Front\ShippingController::class, 'getProvinces'])->name('provinces');
+    Route::get('/cities/{provinceId}', [Front\ShippingController::class, 'getCities'])->name('cities');
+    Route::post('/cost', [Front\ShippingController::class, 'getCost'])->name('cost');
+    Route::post('/quote', [Front\ShippingController::class, 'quote'])->middleware('auth')->name('quote');
+});
 
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');
@@ -35,9 +47,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('suppliers/datatable', [Admin\SupplierController::class, 'datatable'])->name('suppliers.datatable');
     Route::get('purchase-orders/datatable', [Admin\PurchaseOrderController::class, 'datatable'])->name('purchase-orders.datatable');
     Route::get('purchase-receives/datatable', [Admin\PurchaseReceiveController::class, 'datatable'])->name('purchase-receives.datatable');
+    Route::get('orders/datatable', [Admin\OrderController::class, 'datatable'])->name('orders.datatable');
+    Route::get('stock-logs/datatable', [Admin\StockLogController::class, 'datatable'])->name('stock-logs.datatable');
+
+    // ── Pesanan (Order Fulfillment) ──
+    Route::get('orders', [Admin\OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/{order}', [Admin\OrderController::class, 'show'])->name('orders.show');
+    Route::post('orders/{order}/pay', [Admin\OrderController::class, 'markPaid'])->name('orders.pay');
+    Route::post('orders/{order}/status', [Admin\OrderController::class, 'updateStatus'])->name('orders.status');
+    Route::post('orders/{order}/ship', [Admin\OrderController::class, 'ship'])->name('orders.ship');
+    Route::post('orders/{order}/cancel', [Admin\OrderController::class, 'cancel'])->name('orders.cancel');
 
     // ── Resource routes ──
     Route::resource('products', Admin\ProductController::class)->except(['show']);
+    Route::resource('categories', Admin\CategoryController::class)->except(['show']);
     Route::resource('variants', Admin\VariantController::class)->except(['show']);
     Route::resource('users', Admin\UserController::class)->except(['show']);
     Route::resource('suppliers', Admin\SupplierController::class)->except(['show']);
@@ -45,6 +68,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // ── Stok ──
     Route::get('stocks', [Admin\StockController::class, 'index'])->name('stocks.index');
     Route::get('stocks/{stock}', [Admin\StockController::class, 'show'])->name('stocks.show');
+
+    // ── Log keluar masuk barang ──
+    Route::get('stock-logs', [Admin\StockLogController::class, 'index'])->name('stock-logs.index');
 
     // ── Stok Opname ──
     Route::resource('stock-opnames', Admin\StockOpnameController::class)->except(['edit', 'update', 'destroy']);
@@ -56,6 +82,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('purchase-orders', Admin\PurchaseOrderController::class)->except(['edit', 'update', 'destroy']);
     Route::post('purchase-orders/{purchaseOrder}/send', [Admin\PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
     Route::post('purchase-orders/{purchaseOrder}/cancel', [Admin\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+    Route::get('purchase-orders/{purchaseOrder}/print', [Admin\PurchaseOrderController::class, 'print'])->name('purchase-orders.print');
+    Route::get('purchase-orders/{purchaseOrder}/export', [Admin\PurchaseOrderController::class, 'export'])->name('purchase-orders.export');
 
     // ── Purchase Receive ──
     Route::resource('purchase-receives', Admin\PurchaseReceiveController::class)->except(['edit', 'update', 'destroy']);

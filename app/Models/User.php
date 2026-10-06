@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Support\StaffAccess;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -40,6 +41,24 @@ class User extends Authenticatable implements MustVerifyEmail
             || $this->hasAnyRole(['admin', 'superadmin']);
     }
 
+    /** true bila akun staf panel admin (admin, superadmin, gudang, operasional). */
+    public function isStaff(): bool
+    {
+        return $this->isAdmin()
+            || in_array($this->role, StaffAccess::roles(), true)
+            || $this->hasAnyRole(StaffAccess::roles());
+    }
+
+    /** Cek akses role staf ke satu route admin (selalu true untuk admin). */
+    public function canAccessAdminRoute(?string $routeName): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return StaffAccess::allows($this->role, $routeName);
+    }
+
     public function menus()
     {
         return $this->belongsToMany(Menu::class, 'menu_user')->withTimestamps();
@@ -50,7 +69,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasMenuAccess(string $route): bool
     {
-        if ($this->isAdmin()) return true;
-        return $this->menus()->where('route', $route)->exists();
+        return $this->canAccessAdminRoute($route);
     }
 }

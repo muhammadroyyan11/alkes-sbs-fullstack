@@ -23,14 +23,36 @@
                 <h3>Alamat</h3>
                 <p>{{ $order->shipping_address }}</p>
                 <h3>Pengiriman</h3>
-                <p>{{ $order->shipment?->courier }} · {{ ucfirst($order->shipment?->status ?? 'waiting') }}</p>
+                @if($order->shipment)
+                    <p>
+                        {{ $order->shipment->courier }}{{ $order->shipment->service ? ' · ' . $order->shipment->service : '' }}
+                        · {{ ucfirst($order->shipment->status ?? 'waiting') }}
+                    </p>
+                    <p>No. Resi: <strong>{{ $order->shipment->tracking_number ?: '-' }}</strong></p>
+                    @if($order->shipment->shipped_at)
+                        <p>Dikirim: {{ $order->shipment->shipped_at->format('d/m/Y H:i') }}</p>
+                    @endif
+                    @if($order->shipment->delivered_at)
+                        <p>Diterima: {{ $order->shipment->delivered_at->format('d/m/Y H:i') }}</p>
+                    @endif
+                    @if($order->shipment->tracking_url())
+                        <p><a href="{{ $order->shipment->tracking_url() }}" target="_blank" rel="noopener noreferrer">Lacak Pengiriman →</a></p>
+                    @endif
+                @else
+                    <p>Belum dikirim</p>
+                @endif
             </section>
             <aside class="cart-summary">
                 <h3>Ringkasan</h3>
                 <div><span>Subtotal</span><strong>Rp {{ number_format($order->subtotal, 0, ',', '.') }}</strong></div>
-                <div><span>Pengiriman</span><strong>Rp {{ number_format($order->shipping_cost, 0, ',', '.') }}</strong></div>
+                <div><span>Pengiriman</span><strong>Rp {{ number_format($order->shipping_cost, 0, ',', '.') }}</strong></div><div><span>Biaya Admin</span><strong>Rp {{ number_format($order->admin_fee, 0, ',', '.') }}</strong></div>
                 <hr>
                 <div class="summary-total"><span>Total</span><strong>Rp {{ number_format($order->total, 0, ',', '.') }}</strong></div>
+                @if($order->payment_status === 'unpaid')
+                <a href="{{ route('payment.index', $order) }}" class="btn btn-success w-100 mt-3">
+                    <i class="bi bi-credit-card"></i> Bayar Sekarang
+                </a>
+                @endif
             </aside>
         </div>
     </div>

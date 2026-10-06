@@ -53,6 +53,18 @@
                 </span>
             </div>
         </div>
+        @if($purchaseReceive->approved_by)
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">{{ $purchaseReceive->status === 'rejected' ? 'Ditolak Oleh' : 'Disetujui Oleh' }}</label>
+                <input type="text" class="form-control" value="{{ $purchaseReceive->approvedBy?->name ?? '-' }}" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Waktu Proses</label>
+                <input type="text" class="form-control" value="{{ $purchaseReceive->received_at?->format('d/m/Y H:i') ?? '-' }}" readonly>
+            </div>
+        </div>
+        @endif
         <div class="form-group">
             <label class="form-label">Catatan</label>
             <textarea class="form-control" rows="3" readonly>{{ $purchaseReceive->notes ?? '-' }}</textarea>

@@ -49,7 +49,9 @@
                 <div class="form-group">
                     <label class="form-label">Role *</label>
                     <select name="role" class="form-control" required>
-                        <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>User</option>
+                        <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Customer (User)</option>
+                        <option value="gudang" {{ old('role') == 'gudang' ? 'selected' : '' }}>Staf Gudang</option>
+                        <option value="operasional" {{ old('role') == 'operasional' ? 'selected' : '' }}>Operasional</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
                     </select>
                 </div>

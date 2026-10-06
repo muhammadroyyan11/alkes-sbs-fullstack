@@ -25,7 +25,7 @@ class AdminAuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        if (!$request->user()->isAdmin()) {
+        if (!$request->user()->isStaff()) {
             Auth::logout();
 
             throw ValidationException::withMessages([

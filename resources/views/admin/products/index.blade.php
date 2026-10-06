@@ -19,6 +19,7 @@
                         <th>No</th>
                         <th>Nama</th>
                         <th>SKU</th>
+                        <th>Kategori</th>
                         <th>Harga</th>
                         <th>Stok</th>
                         <th>Status</th>
@@ -41,6 +42,7 @@ $('#datatable').DataTable({
         { data: 'DT_RowIndex', orderable: false, searchable: false },
         { data: 'name' },
         { data: 'sku' },
+        { data: 'category' },
         { data: 'price_fmt' },
         { data: 'stock_badge' },
         { data: 'status_badge' },

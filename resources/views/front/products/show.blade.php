@@ -1,7 +1,7 @@
 @extends('layouts.front')
 
 @section('title', $product->name.' — ALKES SBS')
-@section('meta-description', $product->description)
+@section('meta-description', $product->description ?? '')
 
 @section('content')
 <main class="product-detail-section">
@@ -23,6 +23,41 @@
                     <div class="purchase-row"><div class="quantity-control"><button type="button" data-action="minus">−</button><input name="quantity" value="1" min="1" max="{{ max(1, $product->stock) }}" readonly><button type="button" data-action="plus">+</button></div><button class="add-cart-btn" type="submit" @disabled($product->stock <= 0)><i class="bi bi-cart-plus"></i> Tambah ke Keranjang</button></div>
                 </form>
                 <div class="shopping-benefits"><span><i class="bi bi-shield-check"></i> Produk terpercaya</span><span><i class="bi bi-box-seam"></i> Packing aman</span><span><i class="bi bi-headset"></i> Bisa konsultasi</span></div>
+
+                @php
+                    $waDigits = preg_replace('/\D/', '', (string) \App\Models\Setting::get('wa_number'));
+                    if ($waDigits !== '' && !str_starts_with($waDigits, '62')) {
+                        $waDigits = str_starts_with($waDigits, '0')
+                            ? '62' . substr($waDigits, 1)
+                            : '62' . $waDigits;
+                    }
+                    $waMessage = rawurlencode(
+                        'Halo ' . \App\Models\Setting::get('site_name', 'ALKES SBS')
+                        . ', saya mau tanya produk: ' . $product->name
+                        . ' (' . url('/produk/' . $product->sku) . ')'
+                    );
+                    $marketplaces = array_filter([
+                        'Tokopedia' => \App\Models\Setting::get('tokopedia_url'),
+                        'Shopee' => \App\Models\Setting::get('shopee_url'),
+                        'Lazada' => \App\Models\Setting::get('lazada_url'),
+                        'Blibli' => \App\Models\Setting::get('blibli_url'),
+                        'TikTok Shop' => \App\Models\Setting::get('tiktok_shop_url'),
+                    ]);
+                @endphp
+                @if($waDigits || $marketplaces)
+                <div class="product-contact-links">
+                    @if($waDigits)
+                    <a class="product-contact-btn wa" href="https://wa.me/{{ $waDigits }}?text={{ $waMessage }}" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-whatsapp"></i> Tanya via WhatsApp
+                    </a>
+                    @endif
+                    @foreach($marketplaces as $label => $url)
+                    <a class="product-contact-btn market" href="{{ $url }}" target="_blank" rel="noopener noreferrer">
+                        Beli di {{ $label }}
+                    </a>
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
 
@@ -30,6 +65,16 @@
     </div>
 </main>
 @endsection
+
+@push('styles')
+<style>
+.product-contact-links { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.product-contact-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem .95rem; border-radius: 999px; font-size: .875rem; font-weight: 600; text-decoration: none; border: 1px solid #e5e7eb; color: #374151; background: #fff; }
+.product-contact-btn.wa { background: #25d366; border-color: #25d366; color: #fff; }
+.product-contact-btn.market:hover { border-color: var(--brand-green, #6db654); color: var(--brand-green, #6db654); }
+.product-contact-btn.wa:hover { filter: brightness(.95); }
+</style>
+@endpush
 
 @push('scripts')
 <script>

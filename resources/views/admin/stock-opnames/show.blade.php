@@ -8,15 +8,18 @@
     <div class="card-header">
         <h5>Detail Stok Opname</h5>
         <div>
-            @if($stockOpname->status === 'pending')
-            <form method="POST" action="{{ route('admin.stock-opnames.approve', $stockOpname) }}" style="display:inline;" onsubmit="return confirm('Setujui stok opname ini?')">
+            @if($stockOpname->status === 'counted')
+            <form method="POST" action="{{ route('admin.stock-opnames.approve', $stockOpname) }}" style="display:inline;" onsubmit="return confirm('Setujui stok opname ini? Selisih akan diterapkan ke stok.')">
                 @csrf
-                <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Setujui</button>
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Setujui & Terapkan</button>
             </form>
-            <form method="POST" action="{{ route('admin.stock-opnames.reject', $stockOpname) }}" style="display:inline;" onsubmit="return confirm('Tolak stok opname ini?')">
+            <form method="POST" action="{{ route('admin.stock-opnames.reject', $stockOpname) }}" style="display:inline;" onsubmit="return confirm('Tolak hasil hitung stok opname ini?')">
                 @csrf
                 <button type="submit" class="btn btn-danger"><i class="fa-solid fa-ban"></i> Tolak</button>
             </form>
+            @endif
+            @if($stockOpname->status === 'pending')
+            <span class="badge badge-warning" style="padding:8px 12px;">Isi stok fisik terlebih dahulu</span>
             @endif
             <a href="{{ route('admin.stock-opnames.index') }}" class="btn btn-secondary">
                 <i class="fa-solid fa-arrow-left"></i> Kembali
@@ -54,6 +57,14 @@
                 <input type="text" class="form-control" value="{{ $stockOpname->user?->name ?? '-' }}" readonly>
             </div>
         </div>
+        @if($stockOpname->approved_by)
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">{{ $stockOpname->status === 'rejected' ? 'Ditolak Oleh' : 'Disetujui Oleh' }}</label>
+                <input type="text" class="form-control" value="{{ $stockOpname->approvedBy?->name ?? '-' }}" readonly>
+            </div>
+        </div>
+        @endif
         <div class="form-group">
             <label class="form-label">Catatan</label>
             <textarea class="form-control" rows="3" readonly>{{ $stockOpname->notes ?? '-' }}</textarea>

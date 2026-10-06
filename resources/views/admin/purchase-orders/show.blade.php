@@ -18,6 +18,12 @@
                 <button type="submit" class="btn btn-danger"><i class="fa-solid fa-ban"></i> Batalkan</button>
             </form>
             @endif
+            <a href="{{ route('admin.purchase-orders.print', $purchaseOrder) }}" class="btn btn-secondary" target="_blank" rel="noopener">
+                <i class="fa-solid fa-print"></i> Cetak
+            </a>
+            <a href="{{ route('admin.purchase-orders.export', $purchaseOrder) }}" class="btn btn-secondary">
+                <i class="fa-solid fa-file-csv"></i> Ekspor CSV
+            </a>
             <a href="{{ route('admin.purchase-orders.index') }}" class="btn btn-secondary">
                 <i class="fa-solid fa-arrow-left"></i> Kembali
             </a>
