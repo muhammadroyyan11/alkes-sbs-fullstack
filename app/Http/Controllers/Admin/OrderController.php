@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,12 +15,14 @@ class OrderController extends Controller
     /**
      * Filter ringkasan yang didukung di halaman daftar pesanan.
      */
-    protected const FILTERS = ['need_process', 'overdue', 'unpaid', 'today'];
+    protected const FILTERS = ['need_process', 'overdue', 'unpaid', 'today', 'refunded'];
 
     public function index(Request $request)
     {
         // Pastikan daftar tidak menampilkan pesanan yang sudah lewat batas bayar 30 menit.
         \App\Services\OrderExpiry::run();
+        // Terapkan auto-complete pesanan terkirim (N hari) bila scheduler belum jalan.
+        \App\Services\OrderAutoComplete::run();
 
         $filter = $this->filterFrom($request);
 
@@ -29,6 +32,8 @@ class OrderController extends Controller
             'overdue' => Order::active()->where('created_at', '<', now()->subHour(Order::SLA_HOURS))->count(),
             'unpaid' => Order::active()->where('payment_status', '!=', 'paid')->count(),
             'today' => Order::where('created_at', '>=', now()->startOfDay())->count(),
+            'refunded' => Order::where('status', 'refunded')
+                ->where('refunded_at', '>=', now()->startOfDay())->count(),
             'queue_total' => Order::active()->count(),
         ];
 
@@ -90,6 +95,7 @@ class OrderController extends Controller
             'overdue' => $query->active()->where('created_at', '<', now()->subHour(Order::SLA_HOURS)),
             'unpaid' => $query->active()->where('payment_status', '!=', 'paid'),
             'today' => $query->where('created_at', '>=', now()->startOfDay()),
+            'refunded' => $query->where('status', 'refunded'),
             default => null,
         };
     }
@@ -232,6 +238,60 @@ class OrderController extends Controller
     }
 
     /**
+     * Refund: kembalikan dana ke pembeli + stok barang masuk kembali.
+     */
+    public function refund(Request $request, Order $order, MidtransService $midtrans)
+    {
+        $data = $request->validate([
+            'refund_reason' => 'required|string|max:300',
+            'refund_proof' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:4096',
+        ]);
+
+        $proofPath = $this->storeRefundProof($request);
+
+        if (!$order->applyRefund($data['refund_reason'], $request->user()->id, $proofPath)) {
+            // Batal: file bukti yang sudah terlanjur diunggah tidak perlu dipakai.
+            if ($proofPath) {
+                @unlink(public_path($proofPath));
+            }
+
+            throw ValidationException::withMessages([
+                'refund_reason' => 'Refund hanya bisa diproses untuk pesanan LUNAS yang belum dibatalkan/direfund.',
+            ]);
+        }
+
+        $apiOk = $midtrans->refundTransaction($order, $data['refund_reason']);
+
+        return redirect()->route('admin.orders.show', $order)->with(
+            'success',
+            'Refund ' . $order->order_number . ' tercatat (stok dikembalikan)'
+            . ($apiOk ? ' dan dikirim ke Midtrans.' : '. Proses dana di Midtrans cek manual bila perlu.')
+        );
+    }
+
+    /**
+     * Simpan bukti transfer pengembalian dana ke public/img/refunds.
+     * Mengembalikan path relatif (publik) atau null bila tidak ada unggahan.
+     */
+    protected function storeRefundProof(Request $request): ?string
+    {
+        if (!$request->hasFile('refund_proof') || !$request->file('refund_proof')->isValid()) {
+            return null;
+        }
+
+        $directory = public_path('img/refunds');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $file = $request->file('refund_proof');
+        $name = time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $name);
+
+        return 'img/refunds/' . $name;
+    }
+
+    /**
      * Tombol aksi yang tersedia sesuai status pesanan.
      */
     protected function availableActions(Order $order): array
@@ -243,7 +303,8 @@ class OrderController extends Controller
             'process' => $paid && in_array($order->status, ['pending', 'confirmed'], true),
             'ship' => $paid && in_array($order->status, ['pending', 'confirmed', 'processing'], true),
             'complete' => in_array($order->status, ['processing', 'shipped', 'in_transit'], true),
-            'cancel' => !in_array($order->status, ['shipped', 'in_transit', 'delivered', 'completed', 'cancelled'], true),
+            'cancel' => !in_array($order->status, ['shipped', 'in_transit', 'delivered', 'completed', 'cancelled', 'refunded'], true),
+            'refund' => $paid && !in_array($order->status, ['cancelled', 'refunded'], true),
         ];
     }
 }

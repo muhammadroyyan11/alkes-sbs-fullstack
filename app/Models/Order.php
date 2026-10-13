@@ -19,6 +19,10 @@ class Order extends Model
         'midtrans_order_id',
         'paid_at',
         'payment_reference',
+        'refunded_at',
+        'refund_reason',
+        'refunded_by',
+        'refund_proof',
         'shipping_method',
         'subtotal',
         'shipping_cost',
@@ -34,6 +38,7 @@ class Order extends Model
         'admin_fee' => 'decimal:2',
         'total' => 'decimal:2',
         'paid_at' => 'datetime',
+        'refunded_at' => 'datetime',
     ];
 
     /**
@@ -132,6 +137,11 @@ class Order extends Model
     public function address()
     {
         return $this->belongsTo(Address::class);
+    }
+
+    public function refundedBy()
+    {
+        return $this->belongsTo(User::class, 'refunded_by');
     }
 
     public function shipment()
@@ -246,6 +256,7 @@ class Order extends Model
             'delivered' => 'Terkirim',
             'completed' => 'Selesai',
             'cancelled' => 'Dibatalkan',
+            'refunded' => 'Refund',
             default => ucfirst($this->status),
         };
     }
@@ -259,6 +270,7 @@ class Order extends Model
             'shipped', 'in_transit' => 'badge-primary',
             'delivered', 'completed' => 'badge-success',
             'cancelled' => 'badge-danger',
+            'refunded' => 'badge-warning',
             default => 'badge-secondary',
         };
     }
@@ -303,12 +315,20 @@ class Order extends Model
                 $query->whereIn('status', ['completed', 'delivered'])
                     ->orWhereHas('shipment', fn (Builder $query) => $query->where('status', 'delivered'));
             }),
+            'refunded' => $query->where(function (Builder $query) {
+                $query->where('status', 'refunded')
+                    ->orWhere('payment_status', 'refunded');
+            }),
             default => $query,
         };
     }
 
     public function customerStatus(): string
     {
+        if ($this->status === 'refunded' || $this->payment_status === 'refunded') {
+            return 'refunded';
+        }
+
         if (in_array($this->status, ['completed', 'delivered'], true) || $this->shipment?->status === 'delivered') {
             return 'completed';
         }
@@ -336,6 +356,91 @@ class Order extends Model
             'shipped' => 'Sedang Dikirim',
             'completed' => 'Selesai',
             'cancelled' => 'Dibatalkan',
+            'refunded' => 'Dana Dikembalikan',
         };
+    }
+
+    /**
+     * Konfirmasi "Pesanan Diterima" oleh customer (gaya marketplace).
+     * Hanya pesanan yang sudah dikirim/diterima yang boleh diselesaikan.
+     */
+    public function markReceived(): bool
+    {
+        if (! in_array($this->status, ['shipped', 'in_transit', 'delivered'], true)) {
+            return false;
+        }
+
+        $this->update(['status' => 'completed']);
+
+        $shipment = $this->shipment;
+        if ($shipment) {
+            $shipment->update([
+                'status' => 'delivered',
+                'delivered_at' => $shipment->delivered_at ?: now(),
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Prosedur refund: dana dikembalikan + barang masuk kembali ke stok.
+     *
+     * Syarat: pesanan lunas (paid) dan belum pernah dibatalkan/direfund.
+     * Efek:
+     *  - status `refunded`, payment_status `refunded`, alasan + waktu + admin tercatat
+     *  - stok jual & buku gudang naik kembali (IN - refund) untuk setiap item
+     *  - seluruh mutasi OUT pesanan ini ditutup `cancelled`
+     *
+     * Pemanggil (controller) melanjutkan dengan panggilan refund Midtrans
+     * best-effort setelah transaksi DB sukses.
+     */
+    public function applyRefund(string $reason, ?int $adminId = null, ?string $proofPath = null): bool
+    {
+        if ($this->payment_status !== 'paid' || in_array($this->status, ['cancelled', 'refunded'], true)) {
+            return false;
+        }
+
+        DB::transaction(function () use ($reason, $adminId, $proofPath) {
+            $this->load('items');
+
+            $log = app(\App\Services\StockLogService::class);
+
+            foreach ($this->items as $item) {
+                if ($item->variant_id) {
+                    $item->variant()?->increment('stock', $item->quantity);
+                    $model = $item->variant;
+                } else {
+                    $item->product()?->increment('stock', $item->quantity);
+                    $model = $item->product;
+                }
+
+                $log->recordRefund(
+                    $this,
+                    $item->variant_id,
+                    $item->product_id,
+                    (int) $item->quantity,
+                    $reason,
+                    (int) ($model?->stock ?? 0),
+                    $adminId
+                );
+            }
+
+            // Barang sudah kembali: tutup semua mutasi OUT milik pesanan ini.
+            $this->stockLogs()
+                ->where('type', 'out')
+                ->update(['status' => \App\Models\StockMutation::STATUS_CANCELLED]);
+
+            $this->update([
+                'status' => 'refunded',
+                'payment_status' => 'refunded',
+                'refunded_at' => now(),
+                'refund_reason' => $reason,
+                'refunded_by' => $adminId,
+                'refund_proof' => $proofPath ?: $this->refund_proof,
+            ]);
+        });
+
+        return true;
     }
 }

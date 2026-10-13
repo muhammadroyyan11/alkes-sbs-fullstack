@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PosSale;
 use App\Models\Stock;
 use App\Models\StockMutation;
 use App\Models\Variant;
@@ -103,6 +104,122 @@ class StockLogService
             'reference_type' => Order::class,
             'reference_id' => $order->id,
             'note' => 'IN - cancel transaction (' . $reason . '): ' . $order->order_number,
+            'created_by' => $userId,
+        ]);
+    }
+
+    /**
+     * Stok KELUAR karena penjualan kasir (POS) — status langsung `completed`
+     * karena transaksi POS langsung lunas. Stok jual sudah dipotong pemanggil,
+     * metode ini mencatat buku gudang + mutasi OUT.
+     */
+    public function posOut(
+        PosSale $sale,
+        ?int $variantId,
+        ?int $productId,
+        int $qty,
+        int $currentStock = 0,
+        ?int $userId = null
+    ): ?StockMutation {
+        $stock = $this->findStock($variantId, $productId);
+        if (!$stock) {
+            $stock = $this->resolveStock($variantId, $productId, $currentStock);
+        } else {
+            $stock->quantity = max(0, $stock->quantity - $qty);
+            $stock->save();
+        }
+
+        if (!$stock) {
+            return null;
+        }
+
+        return $stock->mutations()->create([
+            'type' => 'out',
+            'status' => StockMutation::STATUS_COMPLETED,
+            'quantity' => $qty,
+            'reference_type' => PosSale::class,
+            'reference_id' => $sale->id,
+            'note' => 'OUT - penjualan POS: ' . $sale->invoice,
+            'created_by' => $userId,
+        ]);
+    }
+
+    /**
+     * Stok MASUK kembali karena transaksi POS dibatalkan.
+     * Mutasi OUT sebelumnya ikut ditutup `cancelled` supaya riwayat tidak
+     * menampilkan barang keluar yang sudah dibatalkan.
+     */
+    public function posIn(
+        PosSale $sale,
+        ?int $variantId,
+        ?int $productId,
+        int $qty,
+        int $currentStock = 0,
+        ?int $userId = null
+    ): ?StockMutation {
+        $stock = $this->findStock($variantId, $productId);
+        if (!$stock) {
+            $stock = $this->resolveStock($variantId, $productId, $currentStock);
+        } else {
+            $stock->quantity += $qty;
+            $stock->save();
+        }
+
+        if ($stock) {
+            $stock->mutations()
+                ->where('type', 'out')
+                ->where('reference_type', PosSale::class)
+                ->where('reference_id', $sale->id)
+                ->update(['status' => StockMutation::STATUS_CANCELLED]);
+        }
+
+        if (!$stock) {
+            return null;
+        }
+
+        return $stock->mutations()->create([
+            'type' => 'in',
+            'status' => StockMutation::STATUS_CANCELLED,
+            'quantity' => $qty,
+            'reference_type' => PosSale::class,
+            'reference_id' => $sale->id,
+            'note' => 'IN - batal transaksi POS: ' . $sale->invoice,
+            'created_by' => $userId,
+        ]);
+    }
+
+    /**
+     * Stok MASUK kembali karena pesanan di-refund (dana kembali + barang kembali).
+     * Buku gudang naik, mutasi IN dicatat, dan pemanggil menutup mutasi OUT-nya.
+     */
+    public function recordRefund(
+        Order $order,
+        ?int $variantId,
+        ?int $productId,
+        int $qty,
+        string $reason,
+        int $currentStock = 0,
+        ?int $userId = null
+    ): ?StockMutation {
+        $stock = $this->findStock($variantId, $productId);
+        if (!$stock) {
+            $stock = $this->resolveStock($variantId, $productId, $currentStock);
+        } else {
+            $stock->quantity += $qty;
+            $stock->save();
+        }
+
+        if (!$stock) {
+            return null;
+        }
+
+        return $stock->mutations()->create([
+            'type' => 'in',
+            'status' => StockMutation::STATUS_COMPLETED,
+            'quantity' => $qty,
+            'reference_type' => Order::class,
+            'reference_id' => $order->id,
+            'note' => sprintf('IN - refund (%s): %s', $reason, $order->order_number),
             'created_by' => $userId,
         ]);
     }

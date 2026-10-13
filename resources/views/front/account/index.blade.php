@@ -160,8 +160,10 @@
                         <label>Nama<input name="name" value="{{ old('name', $user->name) }}" required></label>
                         <label>Email<input value="{{ $user->email }}" disabled></label>
                         <label>WhatsApp<input name="phone" value="{{ old('phone', $user->phone) }}"></label>
+                        <label>Nomor Rekening (untuk pengembalian dana)<input name="bank_account" value="{{ old('bank_account', $user->bank_account) }}" placeholder="mis. BCA 1234567890" maxlength="50"></label>
                         <label class="full">Alamat singkat<textarea name="address">{{ old('address', $user->address) }}</textarea></label>
                     </div>
+                    <small style="display:block;color:#6b7280;margin:-4px 0 10px;">Nomor rekening dipakai admin saat memproses refund pesanan Anda.</small>
                     <button class="checkout-button">Simpan Profil</button>
                 </form>
             </details>

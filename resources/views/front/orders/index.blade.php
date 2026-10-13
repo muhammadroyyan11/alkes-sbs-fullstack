@@ -18,6 +18,7 @@
                 'processing' => 'Diproses',
                 'shipped' => 'Dikirim',
                 'completed' => 'Selesai',
+                'refunded' => 'Refund',
             ] as $key => $label)
                 <a href="{{ $key ? route('orders.index', ['status' => $key]) : route('orders.index') }}" class="{{ $status === $key ? 'active' : '' }}">{{ $label }}</a>
             @endforeach

@@ -30,6 +30,7 @@ final class StaffAccess
         'operasional' => [
             'admin.dashboard',
             'admin.orders.*',
+            'admin.pos.*',
         ],
     ];
 

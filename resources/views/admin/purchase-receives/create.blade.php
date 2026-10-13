@@ -30,7 +30,7 @@
                 <select name="purchase_order_id" class="form-control" id="pr-po-select" required>
                     <option value="">-- Pilih PO --</option>
                     @foreach($purchaseOrders as $po)
-                    <option value="{{ $po->id }}" data-items="{{ e(json_encode($poItemsJson[$po->id] ?? [])) }}" {{ old('purchase_order_id') == $po->id ? 'selected' : '' }}>
+                    <option value="{{ $po->id }}" data-items="{{ json_encode($poItemsJson[$po->id] ?? []) }}" {{ old('purchase_order_id') == $po->id ? 'selected' : '' }}>
                         {{ $po->po_number }} - {{ $po->supplier?->name ?? '-' }} ({{ ucfirst($po->status) }})
                     </option>
                     @endforeach

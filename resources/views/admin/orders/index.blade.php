@@ -49,6 +49,17 @@
             <p>Masuk Hari Ini</p>
         </div>
     </a>
+
+    <a href="{{ route('admin.orders.index', ['filter' => 'refunded']) }}"
+       class="stat-card" style="text-decoration:none;color:inherit;{{ $filter === 'refunded' ? 'outline:2px solid #f59e0b;' : '' }}">
+        <div class="stat-icon" style="background:#f59e0b;">
+            <i class="fa-solid fa-rotate-left"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ $summary['refunded'] }}</h3>
+            <p>Refund Hari Ini</p>
+        </div>
+    </a>
 </div>
 
 {{-- ===== Antrean proses (SLA maks 1 hari) ===== --}}

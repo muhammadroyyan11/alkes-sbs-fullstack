@@ -32,5 +32,6 @@
                 {{ $slot }}
             </main>
         </div>
+    @include('partials.tawk-widget')
     </body>
 </html>

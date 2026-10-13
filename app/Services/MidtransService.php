@@ -297,6 +297,38 @@ class MidtransService
      * Dipakai saat pesanan auto-batal (lewat 30 menit belum bayar) supaya
      * customer tidak bisa lagi membayar pesanan yang sudah dibatalkan.
      */
+    /**
+     * Ajukan refund ke Midtrans (best effort) — dicatat dulu di DB oleh pemanggil,
+     * kalau API gagal tinggal diproses manual di dashboard Midtrans.
+     */
+    public function refundTransaction(Order $order, ?string $reason = null): bool
+    {
+        if (!$order->paid_at && $order->payment_status !== 'paid') {
+            return false;
+        }
+
+        if (!\Midtrans\Config::$serverKey) {
+            // Belum dikonfigurasi (dev): refund hanya tercatat di database.
+            return false;
+        }
+
+        try {
+            \Midtrans\Transaction::refund($order->midtrans_order_id ?: $order->order_number, [
+                'refund_key' => uniqid('rf-', true),
+                'amount' => (float) $order->total,
+                'reason' => (string) $reason,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Midtrans refund (best effort) gagal: ' . $e->getMessage(), [
+                'order_number' => $order->order_number,
+            ]);
+
+            return false;
+        }
+    }
+
     public function cancelTransaction(Order $order): bool
     {
         // Tidak ada transaksi Snap yang perlu dibatalkan.

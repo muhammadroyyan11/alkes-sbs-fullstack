@@ -57,8 +57,8 @@
             <div class="form-group">
                 <label class="form-label">Status</label>
                 <select name="is_active" class="form-control">
-                    <option value="1" {{ old('is_active', 1) ? 'selected' : '' }}>Aktif</option>
-                    <option value="0" {{ old('is_active') == 0 ? 'selected' : '' }}>Nonaktif</option>
+                    <option value="1" @selected((int) old('is_active', 1) === 1)>Aktif</option>
+                    <option value="0" @selected((int) old('is_active', 1) === 0)>Nonaktif</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">

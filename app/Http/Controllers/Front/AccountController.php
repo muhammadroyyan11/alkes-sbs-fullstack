@@ -41,6 +41,7 @@ class AccountController extends Controller
             'name' => 'required|string|max:100',
             'phone' => 'nullable|string|max:30',
             'address' => 'nullable|string|max:1000',
+            'bank_account' => 'nullable|string|max:50',
         ]);
 
         $request->user()->update($data);

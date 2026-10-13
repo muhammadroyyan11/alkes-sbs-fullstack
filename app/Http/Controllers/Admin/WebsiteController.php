@@ -50,6 +50,7 @@ class WebsiteController extends Controller
             'feature_wishlist' => 'required|in:0,1',
             'feature_live_chat' => 'required|in:0,1',
             'feature_cod' => 'required|in:0,1',
+            'auto_complete_days' => 'required|integer|between:0,90',
         ]);
 
         Setting::putMany($data);

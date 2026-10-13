@@ -37,7 +37,7 @@
     <div class="card-body">
 
         {{-- ═══ Aksi ═══ --}}
-        @if($availableActions['mark_paid'] || $availableActions['process'] || $availableActions['ship'] || $availableActions['complete'] || $availableActions['cancel'])
+        @if($availableActions['mark_paid'] || $availableActions['process'] || $availableActions['ship'] || $availableActions['complete'] || $availableActions['cancel'] || $availableActions['refund'])
         <div style="background:#fafafa;border:1px solid #eee;border-radius:10px;padding:16px;margin-bottom:20px;">
             <h6 style="font-weight:600;margin-bottom:12px;"><i class="fa-solid fa-bolt"></i> Proses Pesanan</h6>
 
@@ -81,6 +81,58 @@
                 </form>
                 @endif
             </div>
+
+            @if($availableActions['refund'])
+            <form method="POST" action="{{ route('admin.orders.refund', $order) }}"
+                  enctype="multipart/form-data"
+                  style="margin-top:14px;padding-top:14px;border-top:1px dashed #e5e7eb;"
+                  onsubmit="return confirm('Proses REFUND untuk pesanan ini?\n\n- Dana dikembalikan ke pembeli\n- Stok barang masuk kembali ke gudang\n- Tidak bisa dibatalkan')">
+                @csrf
+                <h6 style="font-weight:600;margin-bottom:8px;color:#b45309;"><i class="fa-solid fa-rotate-left"></i> Prosedur Refund</h6>
+
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.85rem;color:#78350f;">
+                    <i class="fa-solid fa-building-columns"></i>
+                    Rekening penerima (dari profil customer):
+                    <strong>{{ $order->user?->bank_account ?: 'belum diisi — minta customer isi di menu Akun' }}</strong>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <input type="text" name="refund_reason" class="form-control" maxlength="300" required
+                           placeholder="Alasan refund (mis. barang rusak, pembeli komplain)" style="flex:1;min-width:240px;">
+                    <input type="file" name="refund_proof" class="form-control" accept="image/*,.pdf" style="width:240px;">
+                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-rotate-left"></i> Proses Refund</button>
+                </div>
+                <small style="display:block;color:#9ca3af;margin-top:6px;">
+                    Unggah <strong>Bukti Transfer</strong> pengembalian dana (JPG/PNG/WEBP/PDF, maks 4 MB) — wajib bila transfer bank manual.
+                </small>
+            </form>
+            @endif
+        </div>
+        @endif
+
+        @if($order->status === 'refunded' || $order->payment_status === 'refunded')
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+            <h6 style="font-weight:600;margin:0 0 6px;color:#b45309;"><i class="fa-solid fa-rotate-left"></i> Refund Diproses</h6>
+            <div style="font-size:.85rem;color:#78350f;">
+                Tanggal: <strong>{{ $order->refunded_at?->format('d/m/Y H:i') ?: '-' }}</strong> ·
+                Oleh: <strong>{{ $order->refundedBy?->name ?? '-' }}</strong><br>
+                Alasan: {{ $order->refund_reason ?: '-' }}<br>
+                Rekening penerima: <strong>{{ $order->user?->bank_account ?: '-' }}</strong>
+            </div>
+            @if($order->refund_proof)
+            <div style="margin-top:8px;">
+                <div style="font-size:.8rem;font-weight:600;color:#78350f;margin-bottom:4px;">Bukti Transfer</div>
+                @if(str_ends_with(strtolower($order->refund_proof), '.pdf'))
+                <a href="{{ asset($order->refund_proof) }}" target="_blank" rel="noopener"
+                   style="font-size:.85rem;color:#b45309;">Lihat bukti (PDF)</a>
+                @else
+                <a href="{{ asset($order->refund_proof) }}" target="_blank" rel="noopener">
+                    <img src="{{ asset($order->refund_proof) }}" alt="Bukti transfer refund"
+                         style="max-width:260px;border-radius:8px;border:1px solid #fcd34d;">
+                </a>
+                @endif
+            </div>
+            @endif
         </div>
         @endif
 

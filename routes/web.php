@@ -14,7 +14,7 @@ Route::delete('/keranjang/{key}', [Front\CartController::class, 'destroy'])->nam
 Route::get('/checkout', [Front\CheckoutController::class, 'index'])->middleware('auth')->name('checkout.index');
 Route::post('/checkout', [Front\CheckoutController::class, 'store'])->middleware('auth')->name('checkout.store');
 Route::middleware('auth')->prefix('akun')->name('account.')->group(function(){Route::get('/',[Front\AccountController::class,'index'])->name('index');Route::patch('/',[Front\AccountController::class,'update'])->name('update');Route::post('/alamat',[Front\AddressController::class,'store'])->name('addresses.store');Route::put('/alamat/{address}',[Front\AddressController::class,'update'])->name('addresses.update');Route::delete('/alamat/{address}',[Front\AddressController::class,'destroy'])->name('addresses.destroy');});
-Route::middleware('auth')->group(function(){Route::get('/pesanan',[Front\OrderController::class,'index'])->name('orders.index');Route::get('/pesanan/{order}',[Front\OrderController::class,'show'])->name('orders.show');});
+Route::middleware('auth')->group(function(){Route::get('/pesanan',[Front\OrderController::class,'index'])->name('orders.index');Route::get('/pesanan/{order}',[Front\OrderController::class,'show'])->name('orders.show');Route::post('/pesanan/{order}/receive',[Front\OrderController::class,'receive'])->name('orders.receive');});
 Route::middleware('auth')->prefix('pembayaran')->name('payment.')->group(function () {
     Route::get('/{order}', [Front\PaymentController::class, 'index'])->name('index');
     Route::get('/{order}/selesai', [Front\PaymentController::class, 'finish'])->name('finish');
@@ -57,6 +57,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('orders/{order}/status', [Admin\OrderController::class, 'updateStatus'])->name('orders.status');
     Route::post('orders/{order}/ship', [Admin\OrderController::class, 'ship'])->name('orders.ship');
     Route::post('orders/{order}/cancel', [Admin\OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('orders/{order}/refund', [Admin\OrderController::class, 'refund'])->name('orders.refund');
+
+    // ── POS (Point of Sale / Kasir) ──
+    Route::get('pos', [Admin\PosCashierController::class, 'index'])->name('pos.cashier');
+    Route::get('pos/products', [Admin\PosCashierController::class, 'products'])->name('pos.products');
+    Route::post('pos/checkout', [Admin\PosCashierController::class, 'checkout'])->name('pos.checkout');
+    Route::get('pos/receipt/{posSale}', [Admin\PosCashierController::class, 'receipt'])->name('pos.receipt');
+    Route::get('pos/sales/export', [Admin\PosReportController::class, 'export'])->name('pos.sales.export');
+    Route::get('pos/sales', [Admin\PosReportController::class, 'index'])->name('pos.sales.index');
+    Route::get('pos/sales/{posSale}', [Admin\PosReportController::class, 'show'])->name('pos.sales.show');
+    Route::post('pos/sales/{posSale}/cancel', [Admin\PosReportController::class, 'cancel'])->name('pos.sales.cancel');
 
     // ── Resource routes ──
     Route::resource('products', Admin\ProductController::class)->except(['show']);

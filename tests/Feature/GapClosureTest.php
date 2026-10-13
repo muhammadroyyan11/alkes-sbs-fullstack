@@ -301,6 +301,7 @@ class GapClosureTest extends TestCase
             'shipping_instant_areas' => '',
             'admin_fee' => 1000,
             'admin_fee_label' => 'Biaya Admin',
+            'auto_complete_days' => '3',
             'feature_reviews' => '1',
             'feature_wishlist' => '0',
             'feature_live_chat' => '1',

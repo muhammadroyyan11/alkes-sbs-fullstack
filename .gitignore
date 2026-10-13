@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Upload runtime (gambar produk & bukti refund) — jangan di-commit
+/public/img/products/
+/public/img/refunds/

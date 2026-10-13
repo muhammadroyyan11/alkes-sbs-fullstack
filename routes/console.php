@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Pesanan belum bayar otomatis dibatalkan setelah 30 menit + stok dikembalikan.
 Schedule::command('orders:expire-unpaid')->everyMinute();
+
+// Pesanan sudah dikirim melewati batas hari otomatis diselesaikan.
+Schedule::command('orders:auto-complete')->dailyAt('00:05');

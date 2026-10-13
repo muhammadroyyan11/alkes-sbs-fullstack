@@ -312,6 +312,7 @@ class AdminFeatureTest extends TestCase
             'shipping_instant_enabled' => '1',
             'shipping_instant_areas' => 'Kota Surabaya',
             'admin_fee' => 2500,
+            'auto_complete_days' => '7',
             'feature_reviews' => '1',
             'feature_wishlist' => '0',
             'feature_live_chat' => '1',
@@ -323,6 +324,7 @@ class AdminFeatureTest extends TestCase
         $this->assertSame(40000, Setting::int('shipping_instant_cost'));
         $this->assertSame('1', (string) Setting::get('shipping_instant_enabled'));
         $this->assertSame('Kota Surabaya', (string) Setting::get('shipping_instant_areas'));
+        $this->assertSame(7, Setting::int('auto_complete_days'));
         $this->assertSame('Surabaya', Setting::get('shipping_origin_city'));
 
         $this->assertDatabaseHas('settings', ['key' => 'admin_fee', 'value' => '2500']);

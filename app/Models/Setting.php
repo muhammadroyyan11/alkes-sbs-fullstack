@@ -54,6 +54,9 @@ class Setting extends Model
         'admin_fee' => '1000',
         'admin_fee_label' => 'Biaya Admin',
 
+        // Pesanan
+        'auto_complete_days' => '3',
+
         // Sakelar fitur (1 = aktif, 0 = nonaktif)
         'feature_reviews' => '1',
         'feature_wishlist' => '0',

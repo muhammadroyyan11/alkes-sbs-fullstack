@@ -199,6 +199,20 @@
                 @endforeach
             </div>
 
+            <hr>
+            <h6 class="mb-3" style="font-weight:600;">Otomatisasi Pesanan</h6>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label class="form-label">Selesaikan Otomatis (hari)</label>
+                    <input type="number" name="auto_complete_days" class="form-control" min="0" max="90"
+                           value="{{ old('auto_complete_days', $settings['auto_complete_days']) }}">
+                    <small class="text-muted">
+                        Pesanan yang sudah dikirim/diterima selama N hari otomatis menjadi <strong>Selesai</strong>
+                        (bila customer tidak menekan &quot;Pesanan Diterima&quot;). <strong>0 = matikan</strong>.
+                    </small>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary mt-2">
                 <i class="fa-solid fa-save"></i> Simpan
             </button>

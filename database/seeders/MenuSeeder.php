@@ -10,10 +10,15 @@ class MenuSeeder extends Seeder
 {
     public function run(): void
     {
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $mysql = \DB::getDriverName() === 'mysql';
+        if ($mysql) {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         \DB::table('menu_user')->truncate();
         Menu::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($mysql) {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $menus = [
             // ═══ UTAMA ═══
@@ -38,8 +43,13 @@ class MenuSeeder extends Seeder
             ['name' => 'Pesanan', 'icon' => 'fa-solid fa-shopping-cart', 'route' => 'admin.orders.index', 'group' => 'Penjualan', 'group_order' => 5, 'order' => 1],
 
             // ═══ PENGATURAN ═══
-            ['name' => 'Users', 'icon' => 'fa-solid fa-user-gear', 'route' => 'admin.users.index', 'group' => 'Pengaturan', 'group_order' => 6, 'order' => 1],
-            ['name' => 'Website', 'icon' => 'fa-solid fa-globe', 'route' => 'admin.website.edit', 'group' => 'Pengaturan', 'group_order' => 6, 'order' => 2],
+            // ═══ POS (Kasir) ═══
+            ['name' => 'Kasir (POS)', 'icon' => 'fa-solid fa-cash-register', 'route' => 'admin.pos.cashier', 'group' => 'POS', 'group_order' => 6, 'order' => 1],
+            ['name' => 'Laporan Penjualan', 'icon' => 'fa-solid fa-chart-column', 'route' => 'admin.pos.sales.index', 'group' => 'POS', 'group_order' => 6, 'order' => 2],
+
+            // ═══ PENGATURAN ═══
+            ['name' => 'Users', 'icon' => 'fa-solid fa-user-gear', 'route' => 'admin.users.index', 'group' => 'Pengaturan', 'group_order' => 7, 'order' => 1],
+            ['name' => 'Website', 'icon' => 'fa-solid fa-globe', 'route' => 'admin.website.edit', 'group' => 'Pengaturan', 'group_order' => 7, 'order' => 2],
         ];
 
         foreach ($menus as $menu) {
