@@ -56,6 +56,9 @@ class MidtransCspMiddleware
             'https://snap-assets.midtrans.com',
             'https://cdn.datatables.net',
             'https://cdnjs.cloudflare.com',
+            // Tawk.to: CSS widget live chat (tanpa ini widget tetap display:none)
+            'https://embed.tawk.to',
+            'https://*.tawk.to',
         ]);
 
         $connectSrc = implode(' ', [
@@ -68,11 +71,14 @@ class MidtransCspMiddleware
             'https://snap-assets.midtrans.com',
             'https://embed.tawk.to',
             'https://*.tawk.to',
+            // WebSocket sesi visitor Tawk (vsbNNN.tawk.to) — tanpa ini widget "Reconnecting"
+            'wss://*.tawk.to',
+            'wss://embed.tawk.to',
         ]);
 
         $imgSrc = "'self' data: https:";
 
-        $fontSrc = "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com";
+        $fontSrc = "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://embed.tawk.to https://*.tawk.to";
 
         $csp = "default-src 'self'; "
              . "script-src {$scriptSrc}; "
