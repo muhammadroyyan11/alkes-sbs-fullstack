@@ -93,8 +93,10 @@
                     <strong id="pos-change">Rp 0</strong>
                 </div>
 
+                <div id="pos-feedback" class="pos-feedback" style="display:none;"></div>
+
                 <button type="submit" id="pos-pay" class="btn btn-primary pos-pay-btn" disabled>
-                    <i class="fa-solid fa-check"></i> Bayar & Simpan
+                    <i class="fa-solid fa-check"></i> Bayar &amp; Simpan
                 </button>
             </div>
         </div>
@@ -139,6 +141,10 @@
     .pos-change { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0;
         border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: .95rem; }
     .pos-change strong { color: #15803d; font-size: 1.1rem; }
+    .pos-feedback { border-radius: 8px; padding: 10px 12px; font-size: .85rem; margin-bottom: 10px; line-height: 1.5; }
+    .pos-feedback.ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .pos-feedback.err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .pos-feedback ul { margin: 4px 0 0; padding-left: 18px; }
     .pos-pay-btn { width: 100%; padding: 12px; font-size: 1rem; font-weight: 700; }
     .pos-pay-btn:disabled { opacity: .5; cursor: not-allowed; }
     @media (max-width: 992px) { .pos-layout { grid-template-columns: 1fr; } .pos-cart { position: static; } }
@@ -273,22 +279,118 @@
         renderCart();
     });
 
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        if (!items.length) { alert('Keranjang kosong'); return; }
-        form.querySelectorAll('[data-dyn]').forEach(el => el.remove());
-        items.forEach(it => {
-            ['product_id', 'variant_id', 'quantity'].forEach(field => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = `items[${items.indexOf(it)}][${field}]`;
-                input.value = field === 'quantity' ? it.qty : (it[field] ?? '');
-                input.setAttribute('data-dyn', '1');
-                form.appendChild(input);
-            });
+    // ── Bayar: AJAX tanpa reload ─────────────────────────────────────────
+    const feedback = document.getElementById('pos-feedback');
+    const showFeedback = (type, html) => {
+        feedback.className = 'pos-feedback ' + type;
+        feedback.innerHTML = html;
+        feedback.style.display = 'block';
+    };
+    const hideFeedback = () => { feedback.style.display = 'none'; feedback.innerHTML = ''; };
+
+    const csrfToken = form.querySelector('input[name=_token]').value;
+
+    // Kirim item sebagai flat array (items[0][product_id], dst.)
+    const buildPayload = () => {
+        const payload = {
+            _token: csrfToken,
+            discount: Number(discountInput.value) || 0,
+            paid_amount: Number(paidInput.value) || 0,
+            payment_method: (form.querySelector('input[name=payment_method]:checked') || {}).value || 'cash',
+            customer_name: (form.querySelector('input[name=customer_name]') || {}).value || '',
+            notes: (form.querySelector('input[name=notes]') || {}).value || '',
+        };
+        items.forEach((it, i) => {
+            payload[`items[${i}][product_id]`] = it.product_id ?? '';
+            payload[`items[${i}][variant_id]`] = it.variant_id ?? '';
+            payload[`items[${i}][quantity]`] = it.qty;
         });
+        return payload;
+    };
+
+    const resetAfterSale = () => {
+        items = [];
+        try { sessionStorage.removeItem('pos_cart'); } catch (e) {}
+        discountInput.value = 0;
+        paidInput.value = 0;
+        form.querySelectorAll('input[name=customer_name], input[name=notes]').forEach(el => { el.value = ''; });
+        form.querySelector('input[name=payment_method][value=cash]').checked = true;
+        renderCart();
+        load(); // muat ulang grid supaya stok terbaru tampil
+        search.focus();
+    };
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        hideFeedback();
+
+        if (!items.length) {
+            showFeedback('err', 'Keranjang masih kosong.');
+            return;
+        }
+
+        // Dibuka SEBELUM await, masih di dalam gesture klik, supaya tidak
+        // diblokir popup blocker. Diisi URL struk setelah server sukses.
+        const receiptTab = window.open('', '_blank');
+
         payBtn.disabled = true;
-        form.submit();
+        const label = payBtn.innerHTML;
+        payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses…';
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: new URLSearchParams(buildPayload()).toString(),
+            });
+
+            if (res.status === 419) {
+                showFeedback('err', 'Sesi berakhir. Muat ulang halaman (F5) lalu ulangi.');
+                return;
+            }
+
+            const data = await res.json().catch(() => null);
+
+            if (res.ok && data && data.receipt_url) {
+                resetAfterSale();
+                showFeedback('ok',
+                    'Transaksi <strong>' + data.invoice + '</strong> tersimpan. ' +
+                    (receiptTab
+                        ? 'Struk dibuka di tab baru.'
+                        : 'Klik <a href="' + data.receipt_url + '" target="_blank" rel="noopener">di sini</a> untuk membuka struk.'));
+
+                // Arahkan tab yang sudah dibuka sejak klik (di luar await,
+                // Chrome memblokir window.open yang dipanggil setelah promise).
+                if (receiptTab && !receiptTab.closed) {
+                    receiptTab.location.href = data.receipt_url;
+                    receiptTab.focus();
+                }
+                return;
+            }
+
+            if (receiptTab && !receiptTab.closed) receiptTab.close();
+
+            if (res.status === 422 && data && data.errors) {
+                const list = Object.values(data.errors).flat();
+                showFeedback('err', '<strong>Transaksi gagal:</strong><ul>' +
+                    list.map(m => '<li>' + m + '</li>').join('') + '</ul>');
+                return;
+            }
+
+            showFeedback('err', (data && data.message) || 'Terjadi kesalahan. Coba lagi.');
+        } catch (err) {
+            if (receiptTab && !receiptTab.closed) receiptTab.close();
+            showFeedback('err', 'Gagal terhubung ke server. Periksa koneksi lalu ulangi.');
+        } finally {
+            payBtn.disabled = false;
+            payBtn.innerHTML = label;
+            totals();
+        }
     });
 
     try {

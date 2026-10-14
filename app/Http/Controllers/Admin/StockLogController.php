@@ -26,7 +26,12 @@ class StockLogController extends Controller
 
     public function datatable(Request $request)
     {
-        $query = StockMutation::with(['stock.product', 'stock.variant', 'creator', 'reference']);
+        // Terbaru dulu bila client tidak mengirim perintah urut (DataTables
+        // mengirim `order[0]` saat header diklik). Kolom `date_formatted` itu
+        // virtual, jadi urutannya di-map ke kolom asli `created_at` lewat
+        // orderColumn() di bawah.
+        $query = StockMutation::with(['stock.product', 'stock.variant', 'creator', 'reference'])
+            ->when(! $request->filled('order'), fn ($q) => $q->orderByDesc('created_at')->orderByDesc('id'));
 
         if (in_array($request->query('type'), ['in', 'out'], true)) {
             $query->where('type', $request->query('type'));
@@ -41,6 +46,7 @@ class StockLogController extends Controller
         }
 
         return DataTables::of($query)
+            ->orderColumn('date_formatted', 'created_at $1')
             ->addIndexColumn()
             ->addColumn('date_formatted', fn (StockMutation $m) => $m->created_at->format('d/m/Y H:i'))
             ->addColumn('product', function (StockMutation $m) {

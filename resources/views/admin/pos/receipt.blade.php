@@ -80,5 +80,11 @@
             @endif
         </div>
     </div>
+
+    {{-- Transaksi sukses: kosongkan keranjang kasir agar tidak muncul lagi
+         saat kembali dari halaman struk. --}}
+    <script>
+    try { sessionStorage.removeItem('pos_cart'); } catch (e) {}
+    </script>
 </body>
 </html>

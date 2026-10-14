@@ -127,6 +127,17 @@ class PosCashierController extends Controller
             $request->user()
         );
 
+        // Permintaan AJAX (halaman kasir memakai fetch, tanpa reload) dibalas JSON
+        // berisi URL struk — tab cetak dibuka oleh JavaScript di sisi klien.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'invoice' => $sale->invoice,
+                'receipt_url' => route('admin.pos.receipt', $sale),
+            ]);
+        }
+
+        // Fallback tanpa JavaScript: redirect biasa seperti sebelumnya.
         return redirect()
             ->route('admin.pos.receipt', $sale)
             ->with('success', 'Transaksi ' . $sale->invoice . ' tersimpan.');

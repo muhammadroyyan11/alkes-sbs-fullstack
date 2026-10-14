@@ -113,6 +113,58 @@ class PosTest extends TestCase
         $this->get(route('admin.stock-logs.datatable'))->assertOk()->assertSee($sale->invoice);
     }
 
+    public function test_receipt_page_clears_the_cashier_cart(): void
+    {
+        // Struk hanya tampil setelah pembayaran sukses, jadi halaman inilah
+        // yang mengosongkan keranjang kasir (sessionStorage['pos_cart']).
+        $product = $this->product(stock: 10);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(
+            route('admin.pos.checkout'),
+            $this->checkoutPayload($product)
+        );
+
+        $sale = PosSale::firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('admin.pos.receipt', $sale))
+            ->assertOk()
+            ->assertSee($sale->invoice)
+            ->assertSee("sessionStorage.removeItem('pos_cart')", false);
+    }
+
+    public function test_successful_checkout_redirects_to_receipt_not_cashier(): void
+    {
+        $product = $this->product(stock: 10);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.pos.checkout'),
+            $this->checkoutPayload($product)
+        );
+
+        // Sukses -> struk (di situ keranjang dikosongkan).
+        // Gagal validasi -> kembali ke kasir dgn keranjang utuh.
+        $response->assertRedirect(route('admin.pos.receipt', PosSale::firstOrFail()));
+
+        // Gagal stok: validator `items` jalan duluan (stok dicek saat transaksi)
+        $this->post(route('admin.pos.checkout'), $this->checkoutPayload($product, [
+            'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 999]],
+            'paid_amount' => 1,
+        ]))->assertSessionHasErrors('items');
+
+        // Gagal bayar kurang (stok cukup)
+        $this->post(route('admin.pos.checkout'), $this->checkoutPayload($product, [
+            'paid_amount' => 1,
+        ]))->assertSessionHasErrors('paid_amount');
+
+        // Keduanya tetap kembali ke kasir -- keranjang tak hilang saat gagal.
+        $this->post(route('admin.pos.checkout'), $this->checkoutPayload($product, [
+            'paid_amount' => 1,
+        ]))->assertSessionHasErrors('paid_amount');
+        $this->assertSame(1, PosSale::count());
+    }
+
     public function test_checkout_uses_variant_stock(): void
     {
         $product = $this->product();
