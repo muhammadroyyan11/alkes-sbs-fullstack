@@ -52,10 +52,12 @@ class ExampleTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
 
         $this->post(route('cart.store', $product), ['quantity' => 2])->assertRedirect(route('cart.index'));
-        $this->get(route('cart.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Rp 200.000');
+        $this->get(route('cart.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Rp 200.000')
+            ->assertSee('class="checkout-button"', false);
         $this->get(route('checkout.index'))->assertRedirect(route('login'));
         $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('checkout.index'));
         $this->get(route('checkout.index'))->assertOk()->assertSee('Produk Cart')->assertSee('Selesaikan Pesanan')
+            ->assertSee('id="checkout-btn" class="checkout-button"', false)
             ->assertSee('img/payments/bca_va.svg', false)
             ->assertSee('img/payments/qris.svg', false)
             ->assertSee('img/payments/dana.svg', false)

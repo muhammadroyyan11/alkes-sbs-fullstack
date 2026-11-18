@@ -215,7 +215,7 @@
                     <span>Total</span>
                     <strong id="total-price">Rp {{ number_format($subtotal + $regularCost + $adminFee, 0, ',', '.') }}</strong>
                 </div>
-                <button type="button" id="checkout-btn" class="checkout-btn">
+                <button type="button" id="checkout-btn" class="checkout-button">
                     <span id="btn-text">Buat Pesanan & Bayar</span>
                     <span id="btn-loader" class="d-none">
                         <span class="spinner-border spinner-border-sm"></span> Memproses...

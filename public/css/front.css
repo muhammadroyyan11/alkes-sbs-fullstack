@@ -1495,7 +1495,7 @@ html {
 
 .catalog-toolbar > button:hover,
 .add-cart-btn:hover,
-.checkout-button:hover,
+.checkout-button:hover:not(:disabled),
 .empty-cart a:hover,
 .empty-products .btn-danger:hover,
 .modal-actions .btn-add-cart:hover,
@@ -1540,6 +1540,31 @@ html {
 
 .cart-actions button:hover {
   background: var(--brand-green-soft);
+}
+
+.checkout-button {
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+
+.checkout-button:focus-visible {
+  outline: 3px solid var(--brand-green-deep);
+  outline-offset: 3px;
+}
+
+.checkout-button:disabled {
+  border-color: #e2e8f0;
+  background: #e2e8f0;
+  color: #475569;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 @media (max-width: 575px) {
